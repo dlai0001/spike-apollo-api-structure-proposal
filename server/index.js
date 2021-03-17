@@ -1,4 +1,5 @@
 const { ApolloServer, gql, ApolloError } = require('apollo-server');
+const shortUuid = require('short-uuid')
 
 // A schema is a collection of type definitions (hence "typeDefs")
 // that together define the "shape" of queries that are executed against
@@ -17,8 +18,13 @@ const typeDefs = gql`
     players: [Player]
   }
 
+  type TeamRemovePlayerPayload {
+    mutationId: String
+    team: Team
+  }
+
   type TeamOps {
-    removePlayer(playerId: ID): Team
+    removePlayer(playerId: ID): TeamRemovePlayerPayload
   }
 
   # The "Query" type is special: it lists all of the available queries that
@@ -57,23 +63,39 @@ const teams = [
   },
 ];
 
-const removePlayer = (team, playerId) => {
+const removePlayer = (team, playerId, mutationId) => {  
+
   const player = team.players.find(x => x.id === playerId)  
   if(!player) {
     throw new ApolloError('Player not found', '404-101')
   }
+  console.info({
+    mutationId,
+    message: 'removing player',
+    playerId: player.id
+  })
   const playerIndex = team.players.indexOf(player)  
   team.players.splice(playerIndex, 1)
+
+  console.info({
+    mutationId,
+    message: 'removed player',
+    playerId: player.id
+  })
 }
 
 const TeamOps = (_, {teamId}) => {
   const team = teams.find(x => x.id === teamId)
   
   return {
-    removePlayer: ({playerId}) => {      
-      removePlayer(team, playerId)
+    removePlayer: ({playerId}) => { 
+      const mutationId = shortUuid.generate()  
+      removePlayer(team, playerId, mutationId)
 
-      return team
+      return {
+        mutationId,
+        team,
+      }
     }
   }
 }

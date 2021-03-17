@@ -5,10 +5,12 @@ const RemovePlayerMutation = gql`
     mutation removePlayer($teamId: ID, $playerId: ID) {
         team(teamId: $teamId) {
             removePlayer(playerId: $playerId) {
-                id
-                players {
+                team {
                     id
-                }
+                    players {
+                        id
+                    }
+                }                
             }
         }
     }
